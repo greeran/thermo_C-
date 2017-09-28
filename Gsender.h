@@ -16,9 +16,9 @@ class Gsender
     private:
         const int SMTP_PORT = 465;//587;//465;
         const char* SMTP_SERVER = "smtp.mailgun.org";
-        const char* EMAILBASE64_LOGIN = <long email 64 string>;
-        const char* EMAILBASE64_PASSWORD = <the passworkd in base64>;
-        const char* FROM = <my junk mail that will be the from>;
+        const char* EMAILBASE64_LOGIN = "cG9zdG1hc3RlckBzYW5kYm94NTQxNWE1YWUyZjk0NDRjNjg4MzE1NTBlYjE5NmNlOGIubWFpbGd1bi5vcmc=";
+        const char* EMAILBASE64_PASSWORD = "UUFaV1NYMTI=";
+        const char* FROM = "greeranjunk@gmail.com";
         const char* _error = nullptr;
         char* _subject = nullptr;
         String _serverResponce;

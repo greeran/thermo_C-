@@ -35,7 +35,7 @@ static const String RESTCNT="resetcounter";
 static const String TEMPSUM="tempsum";
 static const String HUMDSUM="humidsum";
 static const String RESTMISS="resetmiss";
-static const String apiKey = !!1thekey!!!
+static const String apiKey = "61TUR14P6J0LX5OU";
 
 #define DHTPIN 2     // what digital pin we're connected to
 
@@ -50,54 +50,83 @@ class file_config
   {
     
       ssid="SSID";
-      passwd="SSID PASSWORD";
+      passwd="SSID_PASSWORD";
       mintmp="20";
       maxtmp="40";
       minhmd="30";
       maxhmd="50";
       sndemail="youremail@google.com";
-      resetCnt=0;
+      resetCnt=1;
       tempSum=0;
       humidSum=0;
       resetMiss=0;
   }
   void file_serielize(JsonObject &json)
   {
-      clean();
+
+	  clean();
       json[WIFISSID].printTo(ssid);
+      ssid.replace("\"","");
       json[WIFIPASS].printTo(passwd);
+      passwd.replace("\"","");
       json[MAXTMP].printTo(maxtmp);
+      maxtmp.replace("\"","");
       json[MINITMP].printTo(mintmp);
+      mintmp.replace("\"","");
       json[MINIHMD].printTo(minhmd);
+      minhmd.replace("\"","");
       json[MAXHMD].printTo(maxhmd);
+      maxhmd.replace("\"","");
       json[SNDEMAIL].printTo(sndemail);
+      sndemail.replace("\"","");
       String a(resetCnt);
       String b(tempSum);
       String c(humidSum);
       String d(resetMiss);
       json[RESTCNT].printTo(a);
+      a.replace("\"","");
+      resetCnt=a.toInt();
       json[TEMPSUM].printTo(b);
+      b.replace("\"","");
+      tempSum=b.toInt();
       json[HUMDSUM].printTo(c);
+      c.replace("\"","");
+      humidSum=c.toInt();
       json[RESTMISS].printTo(d);
-      Serial.println("test save to jason1 sndmai:"+sndemail+" ssid:"+ssid);
+      d.replace("\"","");
+      resetMiss=d.toInt();
 
   }
   
   void file_serielize(ESP8266WebServer &server)
   {
-      
+	  Serial.println("test save from web (b4 clean) sndmai:"+sndemail+" ssid:"+ssid + " passwd:"+passwd);
+      clean();
       ssid=server.arg(WIFISSID);
+      Serial.println("TEST b4 replace the ssid "+ssid);
+      ssid.replace("\"","");
       passwd=server.arg(WIFIPASS);
+      passwd.replace("\"","");
       mintmp=server.arg(MINITMP);
+      mintmp.replace("\"","");
       maxtmp=server.arg(MAXTMP);
+      maxtmp.replace("\"","");
       minhmd=server.arg(MINIHMD);
+      minhmd.replace("\"","");
       maxhmd=server.arg(MAXHMD);
+      maxhmd.replace("\"","");
       sndemail=server.arg(SNDEMAIL);
-      Serial.println("test save from srv sndmai:"+sndemail);
+      sndemail.replace("\"","");
+      Serial.println("test save from web (after clean) sndmai:"+sndemail+" ssid:"+ssid+ " passwd:"+passwd);
   }
   void file_deserilize(JsonObject &json)
   {
+
       json[WIFISSID]=ssid;
+      Serial.print("RAN TEST !! ssid: ");
+      Serial.print(ssid);
+      Serial.print(" jason: ");
+      json[WIFIPASS].printTo(Serial);
       json[WIFIPASS]=passwd;
       json[MAXTMP]=maxtmp;
       json[MINITMP]=mintmp;
@@ -108,7 +137,6 @@ class file_config
       json[TEMPSUM]= tempSum;
       json[HUMDSUM]=humidSum;
       json[RESTMISS]= resetMiss;
-      Serial.println("test to jason2 from param sndmail:"+sndemail);
   }
 
   String printConf()
@@ -137,6 +165,10 @@ private:
     minhmd="";
     maxhmd="";
     sndemail="";
+    resetCnt=0;
+    tempSum=0;
+    humidSum=0;
+    resetMiss=0;
   }
   
 };
@@ -159,6 +191,7 @@ bool saveConfig()
     conffile.file_serielize(server);
     Serial.println("Saving Values to json");
     conffile.file_deserilize(json);
+    Serial.println("TEST print after saving to jason");
     json.printTo(Serial);
     json.printTo(configFile);              
     configFile.close();
@@ -177,7 +210,7 @@ bool loadConfig()
       size_t size=configFile.size();
       std::unique_ptr<char[]> buf(new char[size]);
       configFile.readBytes(buf.get(),size);
-      StaticJsonBuffer<256> tmpJsonBuffer;
+      StaticJsonBuffer<512> tmpJsonBuffer;
       JsonObject& json = tmpJsonBuffer.parseObject(buf.get());
       if(!json.success())
       {
@@ -191,12 +224,12 @@ bool loadConfig()
       }
       configFile.close();
       configFile = SPIFFS.open("/config.json", "r");
-      Serial.println("got file");
+      Serial.println("Test read file on loading");
       while(configFile.available())
       {
         Serial.print(configFile.readString());
       }
-      Serial.println("\nfile ended");
+      Serial.println(" ");
       configFile.close();
     } 
     return 0;
@@ -210,23 +243,18 @@ void handleRoot() {
   int sec = millis() / 1000;
   int min = sec / 60;
   int hr = min / 60;
-  if(3 < server.args())
+  if(5 < server.args())
   {    
       //save config
       saveConfig();
-      // test
       srv_clt_flag=1;
       return;
   }else
   {
     loadConfig();
-    Serial.println("after the load");
   }
   
-
-  Serial.println("tste conf");
   Serial.print(conffile.printConf());
-  Serial.println("\nafter test");
   snprintf ( temp, 2048,
 "<html>\
   <head>\
@@ -265,7 +293,7 @@ void handleRoot() {
   disabled,conffile.sndemail.c_str()
   );
 	server.send(200, "text/html", temp);
-  String message = "RAN TEST Message: ";
+/*  String message = "RAN TEST Message: ";
   message += "URI: ";
   message += server.uri();
   message += "\nMethod: ";
@@ -278,7 +306,7 @@ void handleRoot() {
     message += " " + server.argName ( i ) + ": " + server.arg ( i ) + "\n";
   }
   Serial.print(message);
-  Serial.println("finished test print");
+*/
 }
 
 int connectToClient()
@@ -331,7 +359,8 @@ void setup() {
 	dht.begin();
 	Serial.println("Dht module started");
 
-	Serial.println("Testing Connection");
+	Serial.print("Testing Connection (reset reason)");
+	Serial.println(ESP.getResetInfoPtr()->reason);
 	if(REASON_EXT_SYS_RST == ESP.getResetInfoPtr()->reason)
 	{
 		Serial.println("Extenal Reset so disconnect wifi");
@@ -354,21 +383,22 @@ void setup() {
 			srv_clt_flag=2;
 		}
 	}
+	readTmpAndHmd();
 }
 
-int sendMessageToGMail(String subject,String msg)
+int sendMessageToGMail(const String subject,const String msg)
 {
 	Serial.print("sending msg to email: ");
-	String tmpSndMail=conffile.sndemail;
-  tmpSndMail.replace("\"","");
-	Serial.println(conffile.sndemail);
-  Serial.print("tmpsend mail:");
-  Serial.println(tmpSndMail);
+	String tmpSndMail(conffile.sndemail);
+	tmpSndMail.replace("\"","");
+	Serial.println(tmpSndMail);
   
 	int retVal=0;
 	Gsender *gsender = Gsender::Instance();    // Getting pointer to class instance
 	if(gsender->Subject(subject)->Send(tmpSndMail, msg)) {
-	  Serial.println("Message sent.");
+	  Serial.print("Message sent: ");
+	  Serial.print(msg);
+	  Serial.println(" ");
 	} else {
 	  retVal=-1;
 	  Serial.print("Error sending message: ");
@@ -401,10 +431,12 @@ int sendThinkSpeak()
 	return -1;
 }
 
-const static unsigned int CYCLE_NUM=24;
+const static unsigned int CYCLE_NUM=5;
 int startWork()
 {
 	conffile.resetCnt++;
+	Serial.println("TEST RAN start work");
+	Serial.println(conffile.printConf());
 	if(0!=readTmpAndHmd())
 	{
 		conffile.resetMiss++;
@@ -414,13 +446,53 @@ int startWork()
 		conffile.resetMiss++;
 	}else
 	{
+		/*String tmpoutput="B4 tmpSum:";
+		tmpoutput+=conffile.tempSum;
+		tmpoutput+=" hmdSum:";
+		tmpoutput+=conffile.humidSum;
+		tmpoutput+=" dhttmp:";
+		tmpoutput+=dhttemp;
+		tmpoutput+=" dhthmi:";
+		tmpoutput+=dhthumi;
+		Serial.println(tmpoutput);*/
 		conffile.tempSum+=dhttemp;
 		conffile.humidSum+=dhthumi;
-		if((dhttemp < conffile.mintmp.toInt()) ||
-				(dhthumi < conffile.minhmd.toInt()) ||
-				(dhttemp > conffile.maxtmp.toInt()) ||
-				(dhttemp > conffile.maxhmd.toInt()) )
+		/*tmpoutput="after tmpSum:";
+		tmpoutput+=conffile.tempSum;
+		tmpoutput+=" hmdSum:";
+		tmpoutput+=conffile.humidSum;
+		tmpoutput+=" dhttmp:";
+		tmpoutput=+dhttemp;
+		tmpoutput=+" dhthmi:";
+		tmpoutput=+dhthumi;*/
+
+		// TEST TEST TEST
+
+		int confmintmp,confminhmd,confmaxhmd,confmaxtmp;
+		String tmp = conffile.mintmp;
+		tmp.replace("\"","");
+		confmintmp=tmp.toInt();
+		tmp = conffile.minhmd;
+		tmp.replace("\"","");
+		confminhmd=tmp.toInt();
+		tmp = conffile.maxtmp;
+		tmp.replace("\"","");
+		confmaxtmp=tmp.toInt();
+		tmp = conffile.maxhmd;
+		tmp.replace("\"","");
+		confmaxhmd=tmp.toInt();
+
+
+		if((dhttemp < confmintmp) ||
+				(dhthumi < confminhmd) ||
+				(dhttemp > confmaxtmp) ||
+				(dhthumi > confmaxhmd) )
 		{
+			String tmpou=("InOut of range "+conffile.minhmd +" "
+					+conffile.mintmp +" "
+					+conffile.maxhmd +" "
+					+conffile.maxtmp +" ");
+			Serial.println(tmpou);
 			// not in range
 			// send mail not in range
 		  String rangeFail="Range failed temperature=";
@@ -429,36 +501,50 @@ int startWork()
 		  rangeFail+=dhthumi;
 		  sendMessageToGMail("Sensor out of range",rangeFail);
 		}
-		conffile.tempSum+=dhttemp;
-		conffile.humidSum+=dhthumi;
+		//conffile.tempSum+=dhttemp;
+		//conffile.humidSum+=dhthumi;
 		sendThinkSpeak();
 	}
 
-	//if((CYCLE_NUM-1) >= conffile.resetCnt)
-	if(1)
+	if((CYCLE_NUM-1) == conffile.resetCnt)
+	//if(1)
 	{
 		//send update
 		// reset all for next 24 hours
 		unsigned int avgTemp=conffile.tempSum/conffile.resetCnt;
 		unsigned int avgHumd=conffile.humidSum/conffile.resetCnt;
 
-		String strSummery("Temperature and humidity summery");
-		strSummery+="\nTemperature average "+avgTemp;
-		strSummery+="\nHumid average "+avgHumd;
-		strSummery+="\nmissed "+conffile.resetMiss;
+		String strSummery="Temperature and humidity summery\nTemperature average ";
+		strSummery+=avgTemp;
+		strSummery+="\nHumid average ";
+		strSummery+=avgHumd;
+		strSummery+="\nmissed ";
+		strSummery+=conffile.resetMiss;
 
 		sendMessageToGMail("Sensor day summery",strSummery);
-		conffile.resetCnt = 0;
+		conffile.resetCnt = 1;
 		conffile.resetMiss=0;
 		conffile.tempSum = 0;
 		conffile.humidSum = 0;
 	}
-
-
-  Serial.println("go to deepsleep");
-  ESP.deepSleep(20 * 1000000);
-  srv_clt_flag=3;
-  return 0;  
+	//save pramas to file
+	StaticJsonBuffer<512> jsonBuffer;
+	JsonObject& json = jsonBuffer.createObject();
+	File configFile = SPIFFS.open("/config.json", "w");
+	if (!configFile) {
+	  Serial.println("Failed to open config file for writing");
+	  return false;
+	}
+	Serial.println("save config before deepsleep");
+	Serial.println(conffile.printConf());
+	conffile.file_deserilize(json);
+	json.printTo(Serial);
+	json.printTo(configFile);
+	configFile.close();
+	Serial.println("go to deepsleep");
+	ESP.deepSleep(20 * 1000000);
+	srv_clt_flag=3;
+	return 0;
 }
 
 void test_connection()
@@ -500,16 +586,27 @@ void switchFromAPtoClt()
 int readTmpAndHmd()
 {
 	int retVal=-1;
-	for(int i=0;i<3;i++)
+	for(int i=0;i<5;i++)
 	{
 		delay(2000);
 		float h = (int)dht.readHumidity();
 		// Read temperature as Celsius (the default)
 		float t = (int)dht.readTemperature();
-		if (isnan(h) && isnan(t) && (0>h) && (0>t)) {
-			Serial.println("Failed to read from DHT sensor!");
+		if (isnan(h) && isnan(t) ) {
+			Serial.println("Failed 1 to read from DHT sensor!");
 			continue;
 		}
+		if ((0>h) && (0>t))
+		{
+			Serial.println("Failed 2 to read from DHT sensor!");
+			continue;
+		}
+		if ((200<h) && (200<t))
+		{
+			Serial.println("Failed 3 to read from DHT sensor!");
+			continue;
+		}
+
 		retVal=0;
 		dhttemp = (int)t;
 		dhthumi = (int)h;
@@ -528,7 +625,6 @@ void loop() {
   switch (srv_clt_flag)
   {
     case 0: 
-      readTmpAndHmd();
       server.handleClient();
       break;
     case 1:
